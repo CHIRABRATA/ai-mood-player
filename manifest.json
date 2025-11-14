@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "AI Mood Music Player",
+  "version": "1.0",
+  "description": "Analyzes webpage sentiment and plays matching mood music.",
+  "action": {
+    "default_title": "AI Mood Music Player",
+    "default_popup": "popup.html"
+  },
+  "permissions": ["tabs"],
+  "host_permissions": [
+    "https://sentim-api.herokuapp.com/*",
+    "https://www.soundhelix.com/*",
+    "*://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["offscreen.html", "offscreen.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
