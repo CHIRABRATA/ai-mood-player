@@ -113,6 +113,17 @@ function sendTabMessageSafe(tabId, payload) {
   });
 }
 
+async function sendToOffscreenWithRetry(payload, maxAttempts = 5, delayMs = 150) {
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    const res = await sendRuntimeMessageSafe(payload);
+    if (res.ok) return true;
+    await new Promise(r => setTimeout(r, delayMs));
+    attempt++;
+  }
+  return false;
+}
+
 
 // ---------------- MESSAGE LISTENER ----------------
 
@@ -128,8 +139,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
       if (offscreenAvailable) {
         await ensureOffscreenDocument();
-        const res = await sendRuntimeMessageSafe({ type: "PLAY_MOOD_MUSIC", mood, url });
-        if (!res.ok && sender?.tab?.id) {
+        const delivered = await sendToOffscreenWithRetry({ type: "PLAY_MOOD_MUSIC", mood, url });
+        if (!delivered && sender?.tab?.id) {
           // Fallback to content script when offscreen hasn't received yet
           await sendTabMessageSafe(sender.tab.id, { type: "PLAY_MOOD_MUSIC", mood, url });
         }
@@ -149,8 +160,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
       if (offscreenAvailable) {
         await ensureOffscreenDocument();
-        const res = await sendRuntimeMessageSafe({ type: "STOP_MUSIC" });
-        if (!res.ok) {
+        const delivered = await sendToOffscreenWithRetry({ type: "STOP_MUSIC" });
+        if (!delivered) {
           chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
             if (tabs?.[0]?.id) {
               await sendTabMessageSafe(tabs[0].id, { type: "STOP_MUSIC" });
